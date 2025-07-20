@@ -6,3 +6,7 @@ motor
 scikit-learn
 python-multipart
 nltk
+matplotlib
+pandas
+joblib
+python-docx

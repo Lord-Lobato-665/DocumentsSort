@@ -1,0 +1,90 @@
+# Entornos virtuales
+venv/
+.env/
+.venv/
+
+# Archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# MongoDB
+/data/db/
+*.ns
+*.0
+*.1
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Archivos de modelo ML (excepto el modelo base)
+# app/ml_models/
+# !app/ml_models/document_classifier.pkl  # Mantiene el modelo base
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Logs
+*.log
+logs/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de desarrollo
+*.swp
+*.swo
+
+# Archivos de coverage
+.coverage
+htmlcov/
+
+# Archivos de documentación
+docs/_build/
+
+# Archivos de prueba
+.pytest_cache/
+test_output/
+
+# Archivos específicos del proyecto (personaliza según necesites)
+uploads/
+*.pdf
+*.docx
+*.xlsx

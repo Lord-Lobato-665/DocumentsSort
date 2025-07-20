@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pymongo
+motor
+scikit-learn
+python-multipart
+nltk

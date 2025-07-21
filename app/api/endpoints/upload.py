@@ -106,17 +106,19 @@ async def get_documents_by_category(category: str, limit: int = 100):
 
 @router.delete("/documents/{doc_id}", status_code=204)
 async def delete_document(doc_id: str):
-    collection = await get_collection("documents")
-    
     if not ObjectId.is_valid(doc_id):
         raise HTTPException(status_code=400, detail="ID inválido")
-    
-    result = await collection.delete_one({"_id": ObjectId(doc_id)})
-    
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Documento no encontrado")
-    
-    return  # Código 204 No Content sin body
+
+    try:
+        collection = await get_collection("documents")
+        result = await collection.delete_one({"_id": ObjectId(doc_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Documento no encontrado")
+    except Exception as e:
+        # Loguea el error si tienes logger, sino sólo pasa
+        raise HTTPException(status_code=500, detail="Error interno al eliminar documento")
+
+    return  # 204 No Content
 
 # DESCARGAS DE ARCHIVOS
 

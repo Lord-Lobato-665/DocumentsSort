@@ -9,3 +9,11 @@ db = client[config["DB_NAME"]]
 
 async def get_collection(name: str):
     return db[name]
+
+# ✅ Esto lo agregas al final
+class MongoDB:
+    def __init__(self):
+        self.client = client
+        self.db = db
+
+mongodb = MongoDB()

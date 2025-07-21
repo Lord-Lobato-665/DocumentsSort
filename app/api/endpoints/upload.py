@@ -13,6 +13,14 @@ from fastapi.responses import FileResponse
 import zipfile
 from fastapi import HTTPException
 from fastapi import Query
+from fastapi import APIRouter, HTTPException
+from app.db.mongodb import mongodb
+from app.models.document import Document
+from typing import List
+from fastapi import APIRouter, HTTPException
+from bson import ObjectId
+from app.db.mongodb import get_collection
+
 
 router = APIRouter()
 
@@ -67,6 +75,14 @@ async def upload_document(file: UploadFile = File(...)):
         "saved_path": file_path
     }
 
+@router.get("/documents", response_model=List[Document])
+async def get_all_documents():
+    try:
+        documents = await mongodb.db.documents.find().to_list(length=None)
+        return [Document(**doc, id=str(doc["_id"])) for doc in documents]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener los documentos: {str(e)}")
+
 @router.get("/by-category/{category}")
 async def get_documents_by_category(category: str, limit: int = 100):
     """
@@ -87,6 +103,20 @@ async def get_documents_by_category(category: str, limit: int = 100):
         del doc["_id"]
 
     return {"category": category, "total": len(docs), "documents": docs}
+
+@router.delete("/documents/{doc_id}", status_code=204)
+async def delete_document(doc_id: str):
+    collection = await get_collection("documents")
+    
+    if not ObjectId.is_valid(doc_id):
+        raise HTTPException(status_code=400, detail="ID inválido")
+    
+    result = await collection.delete_one({"_id": ObjectId(doc_id)})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    
+    return  # Código 204 No Content sin body
 
 # DESCARGAS DE ARCHIVOS
 

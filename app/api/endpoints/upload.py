@@ -104,12 +104,28 @@ async def delete_document(doc_id: str):
 
     try:
         collection = await get_collection("documents")
+        
+        # Buscar el documento primero
+        document = await collection.find_one({"_id": ObjectId(doc_id)})
+        if not document:
+            raise HTTPException(status_code=404, detail="Documento no encontrado")
+        
+        # Eliminar archivo físico si existe
+        filepath = document.get("filepath")
+        if filepath:
+            relative_path = filepath.replace("\\", os.sep).replace("/", os.sep)
+            if os.path.exists(relative_path):
+                os.remove(relative_path)
+            else:
+                raise HTTPException(status_code=404, detail=f"Archivo físico no encontrado en: {relative_path}")
+        
+        # Eliminar de MongoDB
         result = await collection.delete_one({"_id": ObjectId(doc_id)})
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Documento no encontrado")
+            raise HTTPException(status_code=500, detail="No se pudo eliminar de la base de datos")
+
     except Exception as e:
-        # Loguea el error si tienes logger, sino sólo pasa
-        raise HTTPException(status_code=500, detail="Error interno al eliminar documento")
+        raise HTTPException(status_code=500, detail=f"Error interno al eliminar documento: {str(e)}")
 
     return  # 204 No Content
 

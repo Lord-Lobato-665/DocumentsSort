@@ -4,7 +4,7 @@ import os
 from fastapi import APIRouter, UploadFile, File, Form
 from app.db.mongodb import get_collection
 from app.utils.file_utils import process_file
-from app.ml.model import train_and_save_model, predict_category
+from app.ml.model import train_model_from_db, predict_category
 from datetime import datetime
 import uuid
 from uuid import uuid4
@@ -51,24 +51,17 @@ async def upload_document(file: UploadFile = File(...)):
         "filename": file.filename,
         "content": processed_text,
         "created_at": datetime.utcnow(),
-        "uuid": str(uuid.uuid4()),
+        "uuid": str(uuid4()),
         "categories": [predicted_category],
-        "filepath": file_path  # Guarda la ruta para referencia
+        "filepath": file_path
     }
 
     # Insertar en la colección
     documents_collection = await get_collection("documents")
     await documents_collection.insert_one(doc)
 
-    # Entrenar el modelo con los documentos actuales
-    all_docs = await documents_collection.find({}).to_list(None)
-    filtered_docs = [d for d in all_docs if "content" in d and "categories" in d and d["categories"]]
-
-    texts = [d["content"] for d in filtered_docs]
-    labels = [d["categories"][0] for d in filtered_docs]
-
-    if texts and labels:
-        train_and_save_model(texts, labels)
+    # Reentrenar el modelo completo desde DB
+    await train_model_from_db()  # SIN argumentos
 
     return {
         "message": f"{file.filename} subido y modelo actualizado con categoría '{predicted_category}'",

@@ -1,38 +1,64 @@
 import joblib
+import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
-import os
 
+from app.db.mongodb import get_collection
+
+# Rutas centralizadas
+MODEL_DIR = "models"
+MODEL_PATH = os.path.join(MODEL_DIR, "model.pkl")
+VECTORIZER_PATH = os.path.join(MODEL_DIR, "vectorizer.pkl")
+
+# Variables globales (caché en memoria)
 _model = None
 _vectorizer = None
 
-def train_and_save_model(texts, labels, model_path="models/model.pkl", vectorizer_path="models/vectorizer.pkl"):
-    os.makedirs(os.path.dirname(model_path), exist_ok=True)  # <- Aquí, crea la carpeta si no existe
+def _clear_cache():
+    global _model, _vectorizer
+    _model = None
+    _vectorizer = None
 
+async def train_model_from_db():
+    collection = await get_collection("training_examples")
+    examples = await collection.find().to_list(None)
+
+    texts = [e["text"] for e in examples]
+    labels = [e["category"] for e in examples]
+
+    if not texts or not labels:
+        raise ValueError("No hay datos para entrenar el modelo")
+
+    # 🔥 Limpia modelos anteriores en disco
+    if os.path.exists(MODEL_PATH):
+        os.remove(MODEL_PATH)
+    if os.path.exists(VECTORIZER_PATH):
+        os.remove(VECTORIZER_PATH)
+
+    # 🧠 Entrenamiento
     vectorizer = TfidfVectorizer()
     X = vectorizer.fit_transform(texts)
-
     model = MultinomialNB()
     model.fit(X, labels)
 
-    joblib.dump(model, model_path)
-    joblib.dump(vectorizer, vectorizer_path)
+    # 💾 Guardado
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    joblib.dump(model, MODEL_PATH)
+    joblib.dump(vectorizer, VECTORIZER_PATH)
 
-    return model, vectorizer
+    # 🧹 Limpieza de cache vieja para que se cargue la nueva en predicción
+    _clear_cache()
 
-def load_model(model_path="models/model.pkl", vectorizer_path="models/vectorizer.pkl"):
+    return {"message": "Modelo entrenado y guardado correctamente"}
+
+def load_model():
     global _model, _vectorizer
     if _model is None or _vectorizer is None:
-        _model = joblib.load(model_path)
-        _vectorizer = joblib.load(vectorizer_path)
+        _model = joblib.load(MODEL_PATH)
+        _vectorizer = joblib.load(VECTORIZER_PATH)
     return _model, _vectorizer
 
-def predict_category(text):
-    global _model, _vectorizer
-    if _model is None or _vectorizer is None:
-        load_model()  # Esto carga y asigna las variables globales
-
-    X = _vectorizer.transform([text])
-    prediction = _model.predict(X)
-    return prediction[0]
-
+def predict_category(text: str) -> str:
+    model, vectorizer = load_model()
+    X = vectorizer.transform([text])
+    return model.predict(X)[0]

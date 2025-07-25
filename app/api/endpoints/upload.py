@@ -72,7 +72,9 @@ async def upload_document(file: UploadFile = File(...)):
 async def get_all_documents():
     try:
         documents = await mongodb.db.documents.find().to_list(length=None)
-        return [Document(**doc, id=str(doc["_id"])) for doc in documents]
+        for doc in documents:
+            doc["_id"] = str(doc["_id"])  # convertir ObjectId a str
+        return documents
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener los documentos: {str(e)}")
 

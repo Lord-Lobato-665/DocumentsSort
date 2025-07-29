@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from pathlib import Path
@@ -22,12 +21,11 @@ async def move_file(req: MoveRequest):
     target_dir = base_path / req.target_folder
     target_path = target_dir / req.filename
 
-    # Validación de existencia
     if not source_path.exists():
         raise HTTPException(status_code=404, detail=f"Archivo no encontrado: {source_path}")
     
     try:
-        # Crear destino si no existe
+        # Crear carpeta destino si no existe
         target_dir.mkdir(parents=True, exist_ok=True)
 
         # Mover archivo
@@ -38,23 +36,28 @@ async def move_file(req: MoveRequest):
         if not doc:
             raise HTTPException(status_code=404, detail=f"No se encontró ningún documento con filename exacto: '{req.filename}'")
 
-        # Obtener ruta relativa desde Documentos/
+        # Categoría anterior y nueva
+        current_category = doc.get("categories", ["Desconocida"])[0]
+        new_category = req.target_folder
+
+        # Obtener nueva ruta relativa desde /Documentos
         relative_filepath = str(target_path.relative_to(base_path.parent))
 
-        # Actualizar en MongoDB
+        # Actualizar documento
         await collection.update_one(
             {"_id": doc["_id"]},
             {
                 "$set": {
                     "filepath": relative_filepath,
-                    "categories": [req.target_folder]
+                    "categories": [new_category]
                 }
             }
         )
 
         return {
             "message": "Archivo movido y documento actualizado correctamente.",
-            "new_filepath": relative_filepath
+            "new_filepath": relative_filepath,
+            "advertencia": f"Estás moviendo el documento desde la categoría '{current_category}' (asignada por el modelo) a '{new_category}', lo cual podría romper la coherencia de la clasificación automática."
         }
 
     except Exception as e:

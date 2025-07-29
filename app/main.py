@@ -5,6 +5,15 @@ import os
 
 app = FastAPI(title="Document Classifier API Avanzado")
 
+# Agrega el CORS middleware para permitir todos los orígenes
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permite todos los orígenes
+    allow_credentials=True,
+    allow_methods=["*"],  # Permite todos los métodos
+    allow_headers=["*"],  # Permite todos los encabezados
+)
+
 model = None
 vectorizer = None
 

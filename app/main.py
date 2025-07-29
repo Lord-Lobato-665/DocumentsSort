@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from app.api.endpoints import upload, train, predict, graphics, training, move
 from app.ml.model import load_model
 import os
+from fastapi.middleware.cors import CORSMiddleware
+from app.api.endpoints import auth
+from app.api.endpoints.audit_logs import router as audit_router
 
 app = FastAPI(title="Document Classifier API Avanzado")
 
@@ -31,7 +34,9 @@ async def startup_event():
     else:
         print("[WARNING] Modelos no encontrados, inicia con entrenamiento.")
 
+app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(upload, prefix="/upload", tags=["Data"])
+app.include_router(audit_router, prefix="/audit", tags=["Audit Logs"])
 app.include_router(train, prefix="/train", tags=["Train K-means"])
 #app.include_router(predict, prefix="/predict", tags=["Predict"])
 app.include_router(graphics, prefix="/text/graph", tags=["Graphics"])

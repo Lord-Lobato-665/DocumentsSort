@@ -28,25 +28,21 @@ router = APIRouter()
 DOCUMENT_ROOT = os.getenv("DOCUMENT_ROOT", "./storage")  # Ruta base para guardar documentos
 
 @router.post("/")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    username: str = Query(..., description="Usuario que sube el archivo")
+):
     contents = await file.read()
     processed_text = process_file(contents, file.filename)
 
-    # Predicción de categoría
     predicted_category = predict_category(processed_text)
-
-    # Construir ruta de carpeta y crearla si no existe
     folder_path = os.path.join(DOCUMENT_ROOT, predicted_category)
     os.makedirs(folder_path, exist_ok=True)
 
-    # Ruta completa del archivo
     file_path = os.path.join(folder_path, file.filename)
-
-    # Guardar el archivo físico
     with open(file_path, "wb") as f:
         f.write(contents)
 
-    # Preparar documento para guardar en MongoDB
     doc = {
         "filename": file.filename,
         "content": processed_text,
@@ -56,12 +52,22 @@ async def upload_document(file: UploadFile = File(...)):
         "filepath": file_path
     }
 
-    # Insertar en la colección
     documents_collection = await get_collection("documents")
-    await documents_collection.insert_one(doc)
+    result = await documents_collection.insert_one(doc)
 
-    # Reentrenar el modelo completo desde DB
-    await train_model_from_db()  # SIN argumentos
+    audit_collection = await get_collection("audit_logs")
+    audit_entry = {
+        "timestamp": datetime.utcnow(),
+        "username": username,
+        "operation": "Subida de documento",
+        "document_id": str(result.inserted_id),
+        "document_filename": file.filename,
+        "category": predicted_category,
+        "filepath": file_path
+    }
+    await audit_collection.insert_one(audit_entry)
+
+    await train_model_from_db()  # Reentrenar modelo
 
     return {
         "message": f"{file.filename} subido y modelo actualizado con categoría '{predicted_category}'",
@@ -100,19 +106,16 @@ async def get_documents_by_category(category: str, limit: int = 100):
     return {"category": category, "total": len(docs), "documents": docs}
 
 @router.delete("/documents/{doc_id}", status_code=204)
-async def delete_document(doc_id: str):
+async def delete_document(doc_id: str, username: str = Query(..., description="Usuario que elimina el archivo")):
     if not ObjectId.is_valid(doc_id):
         raise HTTPException(status_code=400, detail="ID inválido")
 
     try:
         collection = await get_collection("documents")
-        
-        # Buscar el documento primero
         document = await collection.find_one({"_id": ObjectId(doc_id)})
         if not document:
             raise HTTPException(status_code=404, detail="Documento no encontrado")
-        
-        # Eliminar archivo físico si existe
+
         filepath = document.get("filepath")
         if filepath:
             relative_path = filepath.replace("\\", os.sep).replace("/", os.sep)
@@ -120,11 +123,22 @@ async def delete_document(doc_id: str):
                 os.remove(relative_path)
             else:
                 raise HTTPException(status_code=404, detail=f"Archivo físico no encontrado en: {relative_path}")
-        
-        # Eliminar de MongoDB
+
         result = await collection.delete_one({"_id": ObjectId(doc_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=500, detail="No se pudo eliminar de la base de datos")
+
+        audit_collection = await get_collection("audit_logs")
+        audit_entry = {
+            "timestamp": datetime.utcnow(),
+            "username": username,
+            "operation": "Eliminación de documento",
+            "document_id": doc_id,
+            "document_filename": document.get("filename"),
+            "category": document.get("categories", ["Desconocida"])[0],
+            "filepath": filepath
+        }
+        await audit_collection.insert_one(audit_entry)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno al eliminar documento: {str(e)}")

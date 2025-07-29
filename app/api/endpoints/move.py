@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from pathlib import Path
 import shutil
@@ -11,10 +11,12 @@ class MoveRequest(BaseModel):
     filename: str
     source_folder: str
     target_folder: str
+    username: str  # <-- Añadido para registrar el usuario
 
 @router.post("/move")
 async def move_file(req: MoveRequest):
     collection = mongodb.db["documents"]
+    audit_collection = mongodb.db["audit_logs"]
     base_path = Path("./Documentos")
     
     source_path = base_path / req.source_folder / req.filename
@@ -36,11 +38,8 @@ async def move_file(req: MoveRequest):
         if not doc:
             raise HTTPException(status_code=404, detail=f"No se encontró ningún documento con filename exacto: '{req.filename}'")
 
-        # Categoría anterior y nueva
         current_category = doc.get("categories", ["Desconocida"])[0]
         new_category = req.target_folder
-
-        # Obtener nueva ruta relativa desde /Documentos
         relative_filepath = str(target_path.relative_to(base_path.parent))
 
         # Actualizar documento
@@ -53,6 +52,18 @@ async def move_file(req: MoveRequest):
                 }
             }
         )
+
+        # REGISTRO EN AUDITORÍA
+        audit_entry = {
+            "timestamp": datetime.utcnow(),
+            "username": req.username,
+            "operation": "Movimiento de archivo",
+            "document_id": str(doc["_id"]),
+            "document_filename": req.filename,
+            "from_category": current_category,
+            "to_category": new_category
+        }
+        await audit_collection.insert_one(audit_entry)
 
         return {
             "message": "Archivo movido y documento actualizado correctamente.",

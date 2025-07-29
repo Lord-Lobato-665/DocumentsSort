@@ -4,3 +4,4 @@ from pydantic import BaseModel
 class TrainingExample(BaseModel):
     category: str
     text: str
+    username: str

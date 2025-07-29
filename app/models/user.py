@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 class UserIn(BaseModel):
-    username: str
+    #username: str
     email: EmailStr
     password: str
 

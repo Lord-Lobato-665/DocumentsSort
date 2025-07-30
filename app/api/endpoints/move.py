@@ -44,6 +44,10 @@ async def move_file(req: MoveRequest):
 
         current_category = doc.get("categories", ["Desconocida"])[0]
         new_category = req.target_folder
+        original_category = doc.get("original_category", None)
+        # Determinar si se mueve o regresa
+        moved_flag = new_category != original_category
+
         relative_filepath = str(target_path.relative_to(base_path.parent))
 
         # Actualizar documento
@@ -52,7 +56,8 @@ async def move_file(req: MoveRequest):
             {
                 "$set": {
                     "filepath": relative_filepath,
-                    "categories": [new_category]
+                    "categories": [new_category],
+                    "moved": moved_flag
                 }
             }
         )
@@ -72,8 +77,15 @@ async def move_file(req: MoveRequest):
         return {
             "message": "Archivo movido y documento actualizado correctamente.",
             "new_filepath": relative_filepath,
-            "advertencia": f"Estás moviendo el documento desde la categoría '{current_category}' (asignada por el modelo) a '{new_category}', lo cual podría romper la coherencia de la clasificación automática."
+            "original_category": original_category,
+            "current_category": new_category,
+            "moved": moved_flag,
+            "advertencia": (
+                f"Estás regresando el documento a su categoría original '{original_category}'." if not moved_flag
+                else f"Estás moviendo el documento desde la categoría '{current_category}' (asignada por el modelo) a '{new_category}', lo cual podría romper la coherencia de la clasificación automática."
+            )
         }
+
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al mover o actualizar: {e}")

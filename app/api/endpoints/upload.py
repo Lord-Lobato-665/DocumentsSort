@@ -45,13 +45,16 @@ async def upload_document(
         f.write(contents)
 
     doc = {
-        "filename": file.filename,
-        "content": processed_text,
-        "created_at": datetime.now(CANCUN_TZ).isoformat(),
-        "uuid": str(uuid4()),
-        "categories": [predicted_category],
-        "filepath": file_path
+    "filename": file.filename,
+    "content": processed_text,
+    "created_at": datetime.now(CANCUN_TZ).isoformat(),
+    "uuid": str(uuid4()),
+    "categories": [predicted_category],
+    "original_category": predicted_category,
+    "moved": False,                         
+    "filepath": file_path
     }
+
 
     documents_collection = await get_collection("documents")
     result = await documents_collection.insert_one(doc)

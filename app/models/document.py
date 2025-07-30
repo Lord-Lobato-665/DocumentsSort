@@ -7,6 +7,8 @@ class Document(BaseModel):
     created_at: Optional[datetime]
     filename: str
     categories: List[str]
+    original_category: Optional[str] = None
+    moved: bool = False
     content: str
     filepath: str
     cluster: Optional[int] = None

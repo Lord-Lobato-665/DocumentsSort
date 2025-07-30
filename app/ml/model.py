@@ -2,6 +2,8 @@ import joblib
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score
+
 
 from app.db.mongodb import get_collection
 
@@ -62,3 +64,20 @@ def predict_category(text: str) -> str:
     model, vectorizer = load_model()
     X = vectorizer.transform([text])
     return model.predict(X)[0]
+
+async def evaluate_model_accuracy():
+    collection = await get_collection("training_examples")
+    examples = await collection.find().to_list(None)
+
+    if not examples:
+        raise ValueError("No hay ejemplos en la base de datos para evaluar")
+
+    texts = [e["text"] for e in examples]
+    labels = [e["category"] for e in examples]
+
+    model, vectorizer = load_model()
+    X = vectorizer.transform(texts)
+    predictions = model.predict(X)
+
+    accuracy = accuracy_score(labels, predictions)
+    return {"accuracy": round(accuracy, 4)}

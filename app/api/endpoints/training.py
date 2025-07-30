@@ -4,6 +4,7 @@ from app.db.mongodb import get_collection
 from app.ml.model import train_model_from_db
 from typing import List
 from datetime import datetime
+from app.ml.model import evaluate_model_accuracy
 
 router = APIRouter()
 
@@ -39,6 +40,13 @@ async def train_model():
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error durante el entrenamiento: {str(e)}")
+    
+@router.get("/model/accuracy")
+async def get_model_accuracy():
+    try:
+        return await evaluate_model_accuracy()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/categories", response_model=List[str])
 async def get_categories():

@@ -5,8 +5,13 @@ from app.ml.model import train_model_from_db
 from typing import List
 from datetime import datetime
 from app.ml.model import evaluate_model_accuracy
+from zoneinfo import ZoneInfo
+
 
 router = APIRouter()
+
+CANCUN_TZ = ZoneInfo("America/Cancun")
+
 
 @router.post("/training-new-example", status_code=201)
 async def add_training_example(example: TrainingExample):
@@ -19,8 +24,8 @@ async def add_training_example(example: TrainingExample):
     
     # Registro en auditoría
     audit_entry = {
-        "timestamp": datetime.utcnow(),
-        "username": example.username,  # <-- Suponiendo que el esquema lo incluye
+        "timestamp": datetime.now(CANCUN_TZ).isoformat(),
+        "username": example.username,
         "operation": "Nuevo ejemplo de entrenamiento",
         "resource_type": "training_example",
         "data": {

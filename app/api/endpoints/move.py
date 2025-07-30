@@ -4,8 +4,12 @@ from pathlib import Path
 import shutil
 from app.db.mongodb import mongodb
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
 
 router = APIRouter()
+
+CANCUN_TZ = ZoneInfo("America/Cancun")
 
 class MoveRequest(BaseModel):
     filename: str
@@ -55,7 +59,7 @@ async def move_file(req: MoveRequest):
 
         # REGISTRO EN AUDITORÍA
         audit_entry = {
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(CANCUN_TZ).isoformat(),
             "username": req.username,
             "operation": "Movimiento de archivo",
             "document_id": str(doc["_id"]),

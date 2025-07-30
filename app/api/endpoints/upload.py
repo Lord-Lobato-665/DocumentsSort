@@ -20,11 +20,12 @@ from typing import List
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 from app.db.mongodb import get_collection
+from zoneinfo import ZoneInfo
 
 
 router = APIRouter()
 
-# Asegúrate que en tu run.py o main.py haces load_dotenv()
+CANCUN_TZ = ZoneInfo("America/Cancun")
 DOCUMENT_ROOT = os.getenv("DOCUMENT_ROOT", "./storage")  # Ruta base para guardar documentos
 
 @router.post("/")
@@ -46,7 +47,7 @@ async def upload_document(
     doc = {
         "filename": file.filename,
         "content": processed_text,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(CANCUN_TZ).isoformat(),
         "uuid": str(uuid4()),
         "categories": [predicted_category],
         "filepath": file_path
@@ -57,7 +58,7 @@ async def upload_document(
 
     audit_collection = await get_collection("audit_logs")
     audit_entry = {
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(CANCUN_TZ).isoformat(),
         "username": username,
         "operation": "Subida de documento",
         "document_id": str(result.inserted_id),
@@ -130,7 +131,7 @@ async def delete_document(doc_id: str, username: str = Query(..., description="U
 
         audit_collection = await get_collection("audit_logs")
         audit_entry = {
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(CANCUN_TZ).isoformat(),
             "username": username,
             "operation": "Eliminación de documento",
             "document_id": doc_id,

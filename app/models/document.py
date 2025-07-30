@@ -1,8 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from datetime import datetime
 
 class Document(BaseModel):
-    id: Optional[str] = Field(None, alias="_id")  # Nuevo campo para el ObjectId
+    id: Optional[str] = Field(None, alias="_id")
+    created_at: Optional[datetime]
     filename: str
     categories: List[str]
     content: str

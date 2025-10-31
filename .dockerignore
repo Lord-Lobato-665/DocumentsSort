@@ -2,30 +2,46 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Entornos
+*.so
+.Python
+*.egg-info/
+dist/
+build/
 .venv/
 venv/
+ENV/
 env/
-.Python
 
-# VCS / IDE
-.git/
-.gitignore
+# IDEs
 .vscode/
 .idea/
-
-# Tests / caches
-.mypy_cache/
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Archivos temporales locales
-*.log
-*.tmp
 *.swp
-.DS_Store
+*.swo
+*~
 
-# Directorios que no queremos en la imagen
-temp/
+# Git
+.git/
+.gitignore
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# Temporal files
+temp/*
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models (opcionalmente puedes incluirlos si quieres que se copien)
+# models/*.pkl
+
+# Documentos (no copiar documentos locales al contenedor)
+Documentos/*
+
+# Graphics
+graphics/*

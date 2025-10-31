@@ -1,10 +1,11 @@
 # app/core/jwt.py
 from jose import jwt
 from datetime import datetime, timedelta
+import os
 
-SECRET_KEY = "tu_super_secreta_llave"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+SECRET_KEY = os.getenv("SECRET_KEY", "tu_super_secreta_llave")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 def create_access_token(data: dict):
     to_encode = data.copy()

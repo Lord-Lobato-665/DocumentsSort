@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: documentsort-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=document_classifier
+    networks:
+      - documentsort-network
+
+  app:
+    build: .
+    container_name: documentsort-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Documentos:/app/Documentos
+      - ./models:/app/models
+      - ./graphics:/app/graphics
+      - ./temp:/app/temp
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - DB_NAME=document_classifier
+      - DOCUMENT_ROOT=/app/Documentos
+      - SECRET_KEY=tu_clave_secreta_super_segura_cambiala
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+    depends_on:
+      - mongodb
+    networks:
+      - documentsort-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  documentsort-network:
+    driver: bridge

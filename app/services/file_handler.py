@@ -1,11 +1,14 @@
 import os
 from fastapi import UploadFile
 from dotenv import dotenv_values
-config = dotenv_values(".env")
+
+# Primero intenta cargar desde .env, si no existe usa variables de entorno del sistema
+config = dotenv_values(".env") if os.path.exists(".env") else {}
 
 async def save_document(file: UploadFile, category: str):
     dir_name = category.replace(" ", "_").replace("á", "a").replace("é", "e").replace("í", "i")
-    dir_path = os.path.join(config["DOCUMENT_ROOT"], dir_name)
+    DOCUMENT_ROOT = os.getenv("DOCUMENT_ROOT", config.get("DOCUMENT_ROOT", "./Documentos"))
+    dir_path = os.path.join(DOCUMENT_ROOT, dir_name)
 
     os.makedirs(dir_path, exist_ok=True)
     file_path = os.path.join(dir_path, file.filename)
